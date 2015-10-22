@@ -1,0 +1,22 @@
+*1.Start PB
+ 2.Start PB-free
+ 3.Custom 1
+	*1.Start
+	 2.Configure
+		*1.Preheat T
+		 2.Preheat t
+		 3.Solder T
+		 4.Solder tmax
+		 5.Name
+		 6.Back
+	 3.Back
+ 4.Custom 2
+ 5.Custom 3
+ 6.Options
+	*1.Backlight  20
+	 2.Contrast   50
+ 	 3.Sound      ON
+	 4.T alpha    11
+	 5.T offset  -60
+	 6.Back
+ 7.Info
