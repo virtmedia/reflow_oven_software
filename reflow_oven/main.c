@@ -78,7 +78,7 @@ void LCD_WriteTemperature(uint16_t max6675Data);
 inline void heaterOn(void);
 inline void heaterOff(void);
 
-//Zmienne globalne:
+//Global variables:
 eemem_t EEMEM eemem = {.powerup = 0, .backlight = 60, .contrast = 50, .t_alpha = 10, .t_offset = 0};
 eemem_t mem;
 
