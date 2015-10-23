@@ -142,6 +142,7 @@ void eepromInit(void)
 	eeprom_read_block(&mem, &eemem, sizeof(eemem_t));
 	mem.powerup++;
 	eepromSave();
+	encoderPosition = mem.contrast;
 }
 
 void eepromSave(void)
@@ -333,7 +334,7 @@ ISR(INT0_vect)
 		LCD_GoTo(5,1);
 		LCD_WriteData(126);
 	}
-	
+	eepromSave();
 }
 
 ISR(INT1_vect)
