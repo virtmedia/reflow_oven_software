@@ -126,13 +126,22 @@ void initSequence(void)
 	spiInit();
 	setBacklight(mem.backlight);
 	setContrast(mem.contrast);
+	pinInterruptsInit();
 	//uart_init();	//9600 bod, 1bit stop, parity: none;
 	LCD_Init();
 	LCD_Clear();
 	LCD_WriteText("  Reflow oven");
 	LCD_GoTo(0,1);
-	LCD_WriteText("E.VT0.PL 2015 v2");
-	pinInterruptsInit();
+	LCD_WriteText("E.VT0.PL 2015 v0");
+	_delay_ms(3000);
+	LCD_Clear();
+	LCD_WriteText("Pow: Bcl: Con:");
+	LCD_GoTo(0,1);
+	lcdInt(mem.powerup);
+	LCD_GoTo(5,1);
+	lcdInt(mem.backlight);
+	LCD_GoTo(10,1);
+	lcdInt(mem.contrast);
 	_delay_ms(3000);
 	LCD_Clear();	
 }
