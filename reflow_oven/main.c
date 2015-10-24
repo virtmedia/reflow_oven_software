@@ -67,6 +67,7 @@ void speakerOn(void);
 void speakerOff(void);
 void speakerBeep(uint16_t duration); //duration in ms
 void lcd8t(uint8_t l);	//print on lcd decimal number
+void lcd16t(uint16_t l);
 void lcdInt(uint16_t number);
 void adcInit(void);
 uint8_t readADCTemp(void);
@@ -84,7 +85,7 @@ eemem_t mem;
 
 volatile uint8_t encoderPosition = 0;
 volatile uint8_t adcTemp;
-volatile uint8_t state=0;
+volatile uint8_t state=1;
 volatile uint16_t max6675Data;
 
 int main(void)
@@ -93,6 +94,8 @@ int main(void)
 	
 	LCD_Clear();
 	sei();
+	LCD_GoTo(12,0);
+	LCD_WriteData(126);
     while(1)
     {
 		if (max6675GetTemperature(max6675Read()) > 30)
@@ -107,6 +110,11 @@ int main(void)
 		LCD_WriteTemperature(max6675Read());
 		LCD_GoTo(0,1);
 		lcdInt(readADCTemp());
+		LCD_GoTo(13,0);
+		lcd8t(mem.backlight);
+		LCD_GoTo(13,1);
+		lcd8t(mem.contrast);
+		
 		_delay_ms(200);
         
     }
@@ -224,15 +232,34 @@ void speakerBeep(uint16_t duration) //duration in ms
 	speakerOff();
 }
 
-void lcd8t(uint8_t l)	//print on lcd decimal number
+void lcd8t(uint8_t l)	//print on lcd decimal number up to 255
 {
-	uint8_t a,j,d,s;
-	a=l;
-	j = a%10;
-	a = a/10;
-	d = a%10;
-	a = a/10;
-	s = a%10;
+	uint8_t j,d,s;
+	j = l%10;
+	l /= 10;
+	d = l%10;
+	l /= 10;
+	s = l%10;
+	LCD_WriteData('0'+s);
+	LCD_WriteData('0'+d);
+	LCD_WriteData('0'+j);
+	
+}
+
+void lcd16t(uint16_t l)	//print on lcd decimal number upp to 65535
+{
+	uint8_t j,d,s,t,dt;
+	j = l%10;
+	l /= 10;
+	d = l%10;
+	l /= 10;
+	s = l%10;
+	l /= 10;
+	t = l%10;
+	l /= 10;
+	dt = l%10;
+	LCD_WriteData('0'+dt);
+	LCD_WriteData('0'+t);
 	LCD_WriteData('0'+s);
 	LCD_WriteData('0'+d);
 	LCD_WriteData('0'+j);
@@ -241,8 +268,12 @@ void lcd8t(uint8_t l)	//print on lcd decimal number
 
 void lcdInt(uint16_t number)
 {
-	char str[17];
+	char str[6];
 	itoa(number,str,10);
+	if (number < 10)
+	{
+		LCD_WriteData('0');
+	}
 	LCD_WriteText(str);
 }
 
@@ -304,7 +335,7 @@ void LCD_WriteTemperature(uint16_t max6675Data)
 	}
 	else
 	{	
-		lcdInt((((max6675Data >> 3) & 0xFFF)/4));
+		lcd8t((((max6675Data >> 3) & 0xFFF)/4));
 		LCD_WriteData('.');
 		lcdInt( ((max6675Data >> 3) & 0x3)*25 );
 		LCD_WriteData(223);
@@ -330,17 +361,17 @@ ISR(INT0_vect)
 	if (state)
 	{
 		encoderPosition = mem.backlight;
-		LCD_GoTo(0,1);
+		LCD_GoTo(12,0);
 		LCD_WriteData(126);
-		LCD_GoTo(5,1);
+		LCD_GoTo(12,1);
 		LCD_WriteData(32);
 	} 
 	else
 	{
 		encoderPosition = mem.contrast;
-		LCD_GoTo(0,1);
+		LCD_GoTo(12,0);
 		LCD_WriteData(32);
-		LCD_GoTo(5,1);
+		LCD_GoTo(12,1);
 		LCD_WriteData(126);
 	}
 	eepromSave();
