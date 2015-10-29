@@ -46,6 +46,9 @@ PB7 - OUT - N/U
 //#include "muart.h"
 #include "HD44780.h"
 
+#define TCCR1B_ON	_BV(WGM12)|_BV(CS10)
+#define TCCR1B_OFF	_BV(WGM12)
+
 typedef struct
 {
 	uint32_t powerup;
@@ -53,6 +56,7 @@ typedef struct
 	uint8_t contrast; //record 2nd place
 	uint8_t t_alpha;
 	int8_t t_offset;
+	volatile uint8_t setTemperature;
 } eemem_t;
 
 void initSequence(void);
@@ -80,7 +84,7 @@ inline void heaterOn(void);
 inline void heaterOff(void);
 
 //Global variables:
-eemem_t EEMEM eemem = {.powerup = 0, .backlight = 60, .contrast = 50, .t_alpha = 10, .t_offset = 0};
+eemem_t EEMEM eemem = {.powerup = 0, .backlight = 60, .contrast = 50, .t_alpha = 10, .t_offset = 0, .setTemperature=30};
 eemem_t mem;
 
 volatile uint8_t encoderPosition = 0;
@@ -98,13 +102,13 @@ int main(void)
 	LCD_WriteData(126);
     while(1)
     {
-		if (max6675GetTemperature(max6675Read()) > 30)
+		if (max6675GetTemperature(max6675Read()) < mem.setTemperature)
 		{
-			heaterOff();
+			heaterOn();
 		}
 		else
 		{
-			heaterOn();
+			heaterOff();
 		}
 		LCD_GoTo(0,0);
 		LCD_WriteTemperature(max6675Read());
@@ -113,7 +117,7 @@ int main(void)
 		LCD_GoTo(13,0);
 		lcd8t(mem.backlight);
 		LCD_GoTo(13,1);
-		lcd8t(mem.contrast);
+		lcd8t(mem.setTemperature);
 		
 		_delay_ms(200);
         
@@ -136,6 +140,7 @@ void initSequence(void)
 	setContrast(mem.contrast);
 	pinInterruptsInit();
 	//uart_init();	//9600 bod, 1bit stop, parity: none;
+	speakerBeep(200);
 	LCD_Init();
 	LCD_Clear();
 	LCD_WriteText("  Reflow oven");
@@ -159,7 +164,7 @@ void eepromInit(void)
 	eeprom_read_block(&mem, &eemem, sizeof(eemem_t));
 	mem.powerup++;
 	eepromSave();
-	encoderPosition = mem.contrast;
+	encoderPosition = mem.setTemperature;
 }
 
 void eepromSave(void)
@@ -185,7 +190,14 @@ void timerInit(void)
 	TCCR0B = _BV(CS00);
 	OCR0A = 0;
 	OCR0B = 0;
-	//Timer 1 for speaker
+	//Timer 1 for speaker OC1A
+	//CTC, WGM12 = 1, may be eventually WGM13 = 1
+	TCCR1A = _BV(COM1A0);
+	TCCR1B = TCCR1B_OFF;
+	//set timer1 frequency = 2KHz
+	OCR1A = 4000;
+	
+	
 }
 
 void pinInterruptsInit(void)
@@ -216,12 +228,12 @@ void setContrast(uint8_t contrast)
 
 void speakerOn(void)
 {
-	
+	TCCR1B = TCCR1B_ON;
 }
 
 void speakerOff(void)
 {
-	
+	TCCR1B = TCCR1B_OFF;
 }
 
 void speakerBeep(uint16_t duration) //duration in ms
@@ -368,13 +380,14 @@ ISR(INT0_vect)
 	} 
 	else
 	{
-		encoderPosition = mem.contrast;
+		encoderPosition = mem.setTemperature;
 		LCD_GoTo(12,0);
 		LCD_WriteData(32);
 		LCD_GoTo(12,1);
 		LCD_WriteData(126);
 	}
 	eepromSave();
+	speakerBeep(20);
 }
 
 ISR(INT1_vect)
@@ -396,7 +409,7 @@ ISR(INT1_vect)
 	}
 	else
 	{
-		setContrast(encoderPosition);
+		mem.setTemperature=encoderPosition;
 		
 		
 	}
